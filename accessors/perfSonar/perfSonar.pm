@@ -5,7 +5,9 @@ use lib "../../lib";
 
 use threads;
 use perfSONAR_PS::Client::LS;
+use perfSONAR_PS::Client::MA;
 use XML::LibXML;
+use XML::Twig;
 use XML::DOM;
 use perfSONAR_PS::Common qw( find findvalue );
 
@@ -15,14 +17,15 @@ sub get_ls_sitelist
 {
 	my $project_name;
 	my $gLs;
+
 	($project_name, $gLs) = @_;
 
 	my @sitelist_list = ();
 	my $array_size = 0;
-
+	
 	my $xls_gls_sitelist = get_gls_sitelist("project:".$project_name);
 	my $xls_hls_sitelist = get_hls_sitelist("project:".$project_name); 
-
+	
 	my $gLSClient = initiate_gls($gLs);
 
 	my $gLSResult = query_to_gls($gLSClient,$xls_gls_sitelist);
@@ -37,23 +40,19 @@ sub get_ls_sitelist
 	my $gLSDoc = $parser->parse_string($gLSResult);
 	my $hLSList = find($gLSDoc->getDocumentElement, "./*[local-name()='accessPoint']", 0);
 
-
-	# Loop through each home lookup service
 	for(my $i = 0; $i < $hLSList->size(); $i++)
 	{ 
 		my $hLSUrl =  $hLSList->get_node($i)->string_value();
-		#async { #120
+
 		my $hlsClient = new perfSONAR_PS::Client::LS(
 		{
 		instance => $hLSUrl
 		}
 		);
-
-		# Send request to home lookup service
 		my $hLSResult = $hlsClient->queryRequestLS(
 		{
 		query => $xls_hls_sitelist,
-		format => 1 #want response to be formated as XML
+		format => 1
 		}
 		);
 
@@ -61,7 +60,7 @@ sub get_ls_sitelist
 
 		if($hLSResult->{response} && $hLSResult->{response} =~ /^</)
 		{
-			# Print list of matching bwctl server addresses
+
 			my $hLSDoc = $resParser->parse_string($hLSResult->{response});
 			my $bwctlList = find($hLSDoc->getDocumentElement, "./*[local-name()='address']", 0);
 			for(my $j = 0; $j < $bwctlList->size(); $j++)
@@ -69,8 +68,14 @@ sub get_ls_sitelist
 				my $output = $bwctlList->get_node($j)->string_value();
 				my $find = "tcp://";
 				my $replace = "";
-				$find = quotemeta $find; # escape regex metachars if present
+				$find = quotemeta $find;
 				$output =~ s/$find/$replace/g;
+				$find = ":4823";
+				$output =~ s/$find/$replace/g;
+				
+				$find = "http://";
+				$output =~ s/$find/$replace/g;
+				
 
 
 				print $output."\n";
@@ -86,7 +91,7 @@ sub get_gls_projects
 {
 	my $gLs;
 	$gLs = @_;
-
+	
 	my @project_list = ();
 	my $array_size = 0;
 
@@ -98,9 +103,8 @@ sub get_gls_projects
 
 	if ($gLSResult eq "")
 	{
-		return -1;
+		return;
 	}
-
 	@project_list = parse_query_keyword($gLSResult);
 
 	for my $element_1(@project_list)
@@ -157,7 +161,129 @@ sub parse_query_keyword
 
 }
 
+sub get_ls_endpoint_pair
+{
 
+	($site, $start_timestamp, $end_timestamp) = @_;
+	
+	my $array_size = 0;
+	my @tmp_src_dst;
+	my @metadata_files;
+	my $src_dst_pair;
+
+	my @src = ();
+	my @dst = ();
+	my $count = 0;
+	my $flag_src_dst;
+
+	my $xls_pairlist = get_xls_pairlist();
+
+	my $data_sitename = $site;
+
+	my $data_http_name = "http://" . $site . ":8085/perfSONAR_PS/services/pSB ";
+
+	# Set eventType
+	my @eventTypes = ('http://ggf.org/ns/nmwg/tools/iperf/2.0');
+
+	my $is_data_empty = 0;
+
+	my $ma = new perfSONAR_PS::Client::MA( { instance => "$data_http_name" } );
+
+	# Send request
+	my $result = $ma->setupDataRequest(
+	{
+	subject    => $xls_pairlist,
+	eventTypes => \@eventTypes,
+	start      => $start_timestamp,
+	end        => $end_timestamp,
+	}
+	); 
+	
+	my $parser = XML::LibXML->new();
+	my $twig= XML::Twig->new(pretty_print => 'indented');
+	$resultString = "";
+	foreach $metadata(@{$result->{"metadata"}})
+	{
+		$twig->parse($metadata);
+		
+		$resultString .= $twig->sprint;
+	}
+	
+	$resultString = "<data>\n".$resultString."\n</data>";
+
+
+	
+	my $parser = XML::LibXML->new();
+	
+	my $doc = $parser->parse_string($resultString);
+
+	@tmp_src_dst = ();
+
+	foreach my $node($doc->getElementsByTagName("nmwg:metadata"))
+	{ #20
+
+		#$metadata[$count] = $node->getAttribute("id");
+		push(@metadata_files,$node->getAttribute("id"));
+
+
+		foreach my $tnode($node->getElementsByTagName("nmwgt:src"))
+		{
+
+			$src[$count] = $tnode->getAttribute("value");
+		}
+
+		foreach my $tnode($node->getElementsByTagName("nmwgt:dst"))
+		{
+			$dst[$count] = $tnode->getAttribute("value");
+		}
+	
+		print $src[$count] . " " . $dst[$count++]."\n";
+
+	}
+}
+
+sub get_one_way_latency_for_last_day
+{
+
+	($site, $source, $destination) = @_;
+	my $resource = ":8085/perfSONAR_PS/services/pSB";
+
+	my $ma = new perfSONAR_PS::Client::MA( { instance => $site.$resource } );
+
+	my $subject = "<owamp:subject xmlns:owamp=\"http://ggf.org/ns/nmwg/tools/owamp/2.0/\" id=\"subject\">\n";
+	$subject .=   "    <nmwgt:endPointPair xmlns:nmwgt=\"http://ggf.org/ns/nmwg/topology/2.0/\">";
+	$subject .=   "        <nmwgt:src type=\"ipv4\" value=\"$source\"/>";
+	$subject .=   "        <nmwgt:dst type=\"ipv4\" value=\"$destination\"/>";
+	$subject .=   "    </nmwgt:endPointPair>";
+	$subject .=   "</owamp:subject>\n";
+
+	my @eventTypes = ();
+
+	# Set time range
+	my $end = time;
+	my $start = $end - 24*3600; #1 day ago
+
+	# Send the request
+	my $result = $ma->setupDataRequest(
+			{
+				subject    => $subject,
+				eventTypes => \@eventTypes,
+				start      => $start,
+				end        => $end,
+			}
+		);
+
+
+	my $twig= XML::Twig->new(pretty_print => 'indented');
+	foreach $metadata(@{$result->{"metadata"}}){
+		$twig->parse($metadata);
+		$twig->print();
+	}
+	foreach $data(@{$result->{"data"}}){
+		$twig->parse($data);
+		$twig->print();
+	}
+}
 
 
 sub initiate_gls
@@ -166,10 +292,11 @@ sub initiate_gls
 	my $gLs;
 
 	($gLs) = @_;
-	
-	if($gLs eq "")
+
+	if($gLs==1 || $gLs == '')
 	{
-	$gLs = 'http://ps4.es.net:9990/perfSONAR_PS/services/gLS';
+	
+		$gLs = 'http://ps1.es.net:9990/perfSONAR_PS/services/gLS';
 	}
 	
 	my $glsClient = new perfSONAR_PS::Client::LS
@@ -178,7 +305,6 @@ sub initiate_gls
 			instance => $gLs
 		}
 	)  or die "Invalid Global Lookup Service address";
-	print $gLs;
 	return $glsClient;
 }
 
@@ -267,6 +393,15 @@ sub get_hls_sitelist
 	$hLSXquery .= "    return \$metadata/perfsonar:subject/nmtb:service/nmtb:address";
 	return $hLSXquery;
 
+}
+
+sub get_xls_pairlist
+{
+	my $subject = "<iperf:subject xmlns:iperf=\"http://ggf.org/ns/nmwg/tools/iperf/2.0\" id=\"subject\">\n";
+	$subject .=   "    <nmwgt:endPointPair xmlns:nmwgt=\"http://ggf.org/ns/nmwg/topology/2.0/\" />\n";
+	$subject .=   "</iperf:subject>\n";
+
+	return $subject;
 
 }
 

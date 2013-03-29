@@ -2,7 +2,6 @@
 
 require perfSonar;
 #use strict;
-print $ARGV[0];
 if(!defined $ARGV[0]){
 	die ("ERROR: No Project name provided!");
 }else{
