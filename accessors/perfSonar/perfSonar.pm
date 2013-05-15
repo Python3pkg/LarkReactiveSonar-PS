@@ -3,6 +3,7 @@
 
 use lib "../../lib";
 
+require perfSonar;
 use threads;
 use perfSONAR_PS::Client::LS;
 use perfSONAR_PS::Client::MA;
@@ -220,9 +221,9 @@ sub get_ls_endpoint_pair
 	@tmp_src_dst = ();
 
 	foreach my $node($doc->getElementsByTagName("nmwg:metadata"))
-	{ #20
+	{
 
-		#$metadata[$count] = $node->getAttribute("id");
+
 		push(@metadata_files,$node->getAttribute("id"));
 
 
@@ -246,9 +247,11 @@ sub get_one_way_latency_for_last_day
 {
 
 	($site, $source, $destination) = @_;
+    
+    print "QUERY: site:".$site." src:".$source." des:".$destination;
 	my $resource = ":8085/perfSONAR_PS/services/pSB";
 
-	my $ma = new perfSONAR_PS::Client::MA( { instance => $site.$resource } );
+	my $ma = new perfSONAR_PS::Client::MA( { instance => "http://".$site.$resource } );
 
 	my $subject = "<owamp:subject xmlns:owamp=\"http://ggf.org/ns/nmwg/tools/owamp/2.0/\" id=\"subject\">\n";
 	$subject .=   "    <nmwgt:endPointPair xmlns:nmwgt=\"http://ggf.org/ns/nmwg/topology/2.0/\">";
@@ -285,6 +288,79 @@ sub get_one_way_latency_for_last_day
 	}
 }
 
+sub get_throughput_results{
+
+	($site, $source, $destination, $secondsAgo) = @_;
+
+	print $source
+	print $destination
+	
+	
+my $resource = ":8085/perfSONAR_PS/services/pSB";
+
+# Create client
+my $ma = new perfSONAR_PS::Client::MA( { instance => "http://".$site.$resource } );
+
+# Define subject
+my $subject = "<iperf:subject xmlns:iperf=\"http://ggf.org/ns/nmwg/tools/iperf/2.0\" id=\"subject\">\n";
+$subject .=   "    <nmwgt:endPointPair xmlns:nmwgt=\"http://ggf.org/ns/nmwg/topology/2.0/\">";
+$subject .=   "        <nmwgt:src type=\"hostname\" value=\"".$source."\"/>";
+$subject .=   "        <nmwgt:dst type=\"hostname\" value=\"".$destination."\"/>";
+$subject .=   "    </nmwgt:endPointPair>";
+$subject .=   "</iperf:subject>\n";
+
+# Set eventType
+my @eventTypes = ();
+
+# Set time range
+my $end = time;
+my $start = $end - $secondsAgo;
+
+# Send request
+my $result = $ma->setupDataRequest(
+        {
+            subject    => $subject,
+            eventTypes => \@eventTypes,
+            start      => $start,
+            end        => $end,
+        }
+    );
+
+#Output XML
+my $parser = XML::LibXML->new();
+
+my $twig= XML::Twig->new(pretty_print => 'indented');
+foreach $metadata(@{$result->{"metadata"}}){
+	$twig->parse($metadata);
+	#SS$twig->print();
+}
+foreach $data(@{$result->{"data"}}){
+	#print $data;
+	my $doc = $parser->parse_string($data);
+	
+	foreach my $node($doc->getElementsByTagName("iperf:datum"))
+	{
+		print $node->getAttribute("throughput");
+		print "\n";
+	}
+	#$twig->parse($data);
+	#$twig->print();
+}
+
+#$result = "<data>\n".$result."\n</data>";
+
+#my $doc = $parser->parse_string($result);
+#print $doc;
+
+#foreach my $node($doc->getElementsByTagName("nmwg:data"))
+#	{
+
+#		print "tag".$node;
+		
+#}
+
+
+}
 
 sub initiate_gls
 {
