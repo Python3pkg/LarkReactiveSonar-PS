@@ -340,6 +340,7 @@ foreach $data(@{$result->{"data"}}){
 	foreach my $node($doc->getElementsByTagName("iperf:datum"))
 	{
 		print $node->getAttribute("throughput");
+		print ",".$node->getAttribute("timeValue");
 		print "\n";
 	}
 	#$twig->parse($data);

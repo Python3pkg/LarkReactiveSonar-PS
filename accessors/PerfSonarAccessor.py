@@ -396,7 +396,7 @@ class PerfSonarAccessor(object):
         command = command + " " + self.currentSite + " " + source + " " + destination + " " + str(secondsAgo)
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
         stdout, stderr = process.communicate()
-        self.currentThroughputResults = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter=' ', skipinitialspace=True, fieldnames=['throughput'])
+        self.currentThroughputResults = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter=',', skipinitialspace=True, fieldnames=['throughput', 'timeValue'])
         #self.projectSiteList = [r['site'] for r in self.projectSiteList]
 
     def fetchProjectList(self):
