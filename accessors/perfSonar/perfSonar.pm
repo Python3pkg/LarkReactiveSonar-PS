@@ -1,9 +1,9 @@
 #!/usr/bin/perl
 
 
-##use lib "../../lib";
-push ( @INC,"../../lib");
-##require perfSonar;
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
 use threads;
 use perfSONAR_PS::Client::LS;
 use perfSONAR_PS::Client::MA;
