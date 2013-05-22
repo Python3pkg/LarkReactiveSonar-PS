@@ -401,7 +401,7 @@ class PerfSonarAccessor(object):
         Throws:
         NONE
         """
-		
+
         command = "perl list_all_endpoints_with_throughput_data_available.pl"
         command = command + " " + self.currentSite
 
@@ -545,8 +545,8 @@ class PerfSonarAccessor(object):
         command = "perl get_gls_projects.pl"
         process = subprocess.Popen(command + " " + self.globalLookupService, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
         stdout, stderr = process.communicate()
-        self.projectList = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter=':', skipinitialspace=True, fieldnames=['type', 'project'])
-        self.projectList = [r['project'] for r in self.projectList]
+        self.projectList = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter='\n', skipinitialspace=True, fieldnames=['project'])
+        self.projectList = list(self.projectList)
 
     def projectExists(self, projectName):
 

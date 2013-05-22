@@ -19,12 +19,12 @@ sub initiate_gls{
 	my $gLs;
 
 	($gLs) = @_;
-
-	if($gLs==1 || $gLs == '')
-	{
+	#print $gLs; 
+	#if($gLs==1 || $gLs == '')
+	#{
 	
-		$gLs = 'http://ps1.es.net:9990/perfSONAR_PS/services/gLS';
-	}
+	##	$gLs = 'http://ps1.es.net:9990/perfSONAR_PS/services/gLS';
+	#}
 	
 	my $glsClient = new perfSONAR_PS::Client::LS
 	(
@@ -32,6 +32,8 @@ sub initiate_gls{
 			instance => $gLs
 		}
 	)  or die "Invalid Global Lookup Service address";
+	
+	
 	return $glsClient;
 }
 
@@ -132,7 +134,7 @@ sub get_ls_sitelist{
 
 	($project_name, $gLs) = @_;
 
-	print $gLs
+	#print $gLs
 	
 	my @sitelist_list = ();
 	my $array_size = 0;
@@ -202,14 +204,13 @@ sub get_ls_sitelist{
 }
 
 sub get_gls_projects{
-	my $gLs;
-	$gLs = @_;
+	($gLs) = @_;
 	
 	my @project_list = ();
 	my $array_size = 0;
 
 	my $xls_keyword = get_gls_keyword();
-	print $gLs;
+	#print $gLs;
 	my $gLSClient = initiate_gls($gLs);
 	
 	my $gLSResult = query_to_gls($gLSClient,$xls_keyword);
