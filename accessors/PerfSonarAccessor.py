@@ -35,8 +35,8 @@ __email__=  'AndrewKoerner.b@gmail.com'
 class PerfSonarAccessor(object):
 
     globalLookupService = None
-    projectName = None#"Internet2"
-    currentSite = None#"larkps.chtc.wisc.edu"
+    projectName = None
+    currentSite = None
 
     projectSiteList = None
     projectList = None
@@ -53,7 +53,7 @@ class PerfSonarAccessor(object):
 
         Keyword arguments:
         projectName -- The project name to initalize the PerfSonarAccessor with.  The default project name
-        will be 'Internet 2' if none is provided.
+        will be 'IWisconsin' if none is provided.
         globalLookupService -- The address of the perfSonar Global Lookup Service to use.  In no address
         is specified then 'http://ps4.es.net:9990/perfSONAR_PS/services/gLS' will be set as the gLs.
 
@@ -104,7 +104,7 @@ class PerfSonarAccessor(object):
         """Mutator/setter for the Global Lookup Service 
 
         Keyword arguments:
-        globalLookupService -- The address of the perfSonar Global Lookup Service to use.  In no address
+        globalLookupService -- The address of the perfSonar Global Lookup Service to use.  If no address
         is specified then 'http://ps4.es.net:9990/perfSONAR_PS/services/gLS' will be set as the gLs.
         
         Preconditions:
@@ -175,13 +175,13 @@ class PerfSonarAccessor(object):
 
         Keyword arguments:
         site -- address of the site to set the PerfSonarAccessor to e.g., 'larkps.chtc.wisc.edu', 'hcc-ps02.unl.edu' 
-        for project 'Wisconsin'
+        for project 'Wisconsin'. A list of Global Lookup Services is maintained at http://www.perfsonar.net/gls.root.hints.
         
         Preconditions:
         NONE
         
         Postconditions:
-        currentSite will be set
+        currentSite will be set.  the throughput and OWAMP end point pair list must be fetched once the currentSite is changed.
 
         Throws:
         NONE
@@ -290,24 +290,24 @@ class PerfSonarAccessor(object):
 
     def getCurrentThroughputData(self):
 
-        """Returns a list that is the current throughput results obtained by fetchThroughputResults see fetchThroughputResults
+        """Returns a list that is the current throughput data obtained by fetchThroughputData at the currently set site.  see fetchThroughputData
         documentation for more information.
 
         Keyword arguments:
         NONE
         
         Preconditions:
-        Current throughput results must first be obtained by calling fetchThroughputResults
+        Current throughput data must first be obtained by calling fetchThroughputData
    
         Postconditions:
         NONE
 
         Throws:
-        Excepiton if currentThroughputResults == None call fetchThroughputResults
+        Excepiton if currentThroughputData == None call fetchThroughputData
         """
 
-        if(self.currentThroughputResults == None):
-            raise Exception("ERROR: currentThroughputResults not set try calling fetchThroughputResults") 
+        if(self.currentThroughputData == None):
+            raise Exception("ERROR: currentThroughputData not set try calling fetchThroughputData") 
             return None
         return list(self.currentThroughputResults)
 
@@ -336,7 +336,7 @@ class PerfSonarAccessor(object):
 
     def getSiteEndPointPairListWithThroughputData(self):
 
-        """Returns a list of endpoint pairs [source,destination] associated with the current site.  The 
+        """Returns a list of endpoint pairs [source,destination] associated with the current site that has throughput data available.  The 
         endpoint pair list must first be externally fetched.
 
         Keyword arguments:
@@ -350,17 +350,17 @@ class PerfSonarAccessor(object):
         NONE
 
         Throws:
-        Excepiton if fetchSiteEndPointPairListWithThroughputData == None call fetchSiteEndPointPairListWithThroughputDataWithThroughputData to prevent this
+        Excepiton if fetchSiteEndPointPairListWithThroughputData == None call fetchSiteEndPointPairListWithThroughputData to prevent this
         """
 
         if(self.siteEndPointPairListWithThroughputData == None):
-            raise Exception("ERROR: fetchSiteEndPointPairListWithThroughputData not set") 
+            raise Exception("ERROR: currentThroughputData not set") 
             return None
         return list(self.siteEndPointPairListWithThroughputData)
 
     def getSiteEndPointPairListWithOWAMPData(self):
 
-        """Returns a list of endpoint pairs [source,destination] associated with the current site that have OWAMP data.  The 
+        """Returns a list of endpoint pairs [source,destination] associated with the current site that has OWAMP data.  The 
         endpoint pair list must first be externally fetched by calling fetchSiteEndPointPairListWithOWAMPData.
 
         Keyword arguments:
@@ -378,24 +378,23 @@ class PerfSonarAccessor(object):
         """
 
         if(self.siteEndPointPairListWithOWAMPData == None):
-            raise Exception("ERROR: fetchSiteEndPointPairListWithOWAMPData not set") 
+            raise Exception("ERROR: currentOWAMPData not set") 
             return None
         return list(self.siteEndPointPairListWithOWAMPData)
 
     def fetchSiteEndPointPairListWithThroughputData(self):
 
-        """Fetches externally at the current site endpoint pair list.
+        """Fetches externally at the current site endpoint pair list with throughtput data.
 
         Keyword arguments:
         NONE
-        endUnixTimestamp -- ending time range to fetch endpoint pair list for
         
         Preconditions:
         currentSite must be set, this  can be done by callig setCurrentSite
         with a vaild site address.  If no site is set then 'perfSonar.unl.edu' will be used.
         
         Postconditions:
-        fetchSiteEndPointPairListWithThroughputData will be populated with endpoint pair data available by the current site.  This data is provided via
+        siteEndPointPairListWithThroughputData will be populated with endpoint pair list with throughtput data.  This data is provided via
         the current site.
 
         Throws:
@@ -412,17 +411,17 @@ class PerfSonarAccessor(object):
 
     def fetchSiteEndPointPairListWithOWAMPData(self):
 
-        """Fetches externally at the current site OWAMP data as specified by the query.
+        """Fetches externally at the current site end point pair list with OWAMP data available.
 
         Keyword arguments:
         NONE
         
         Preconditions:
-        currentSite must be set, this  can be done by callig setCurrentSite
+        currentSite must be set, this  can be done by calling setCurrentSite
         with a vaild site address.
         
         Postconditions:
-        currentThroughputResults will be populated with throughput data specified in the source,
+         siteEndPointPairListWithOWAMPData will be populated with throughput data specified in the source,
         destination and secondsAgo query.  This can be accessed by calling getCurrentThroughputResults. 
 
         Throws:
@@ -453,8 +452,8 @@ class PerfSonarAccessor(object):
         with a vaild site address.
         
         Postconditions:
-        currentThroughputResults will be populated with throughput data specified in the source,
-        destination and secondsAgo query.  This can be accessed by calling getCurrentThroughputResults. 
+        currentThroughputData will be populated with throughput data specified in the source,
+        destination and secondsAgo query.  This can be accessed by calling getCurrentThroughputData. 
 
         Throws:
         If currentSite is None or empty then an exception is thrown.  This can be avoided by setting the current
@@ -476,7 +475,7 @@ class PerfSonarAccessor(object):
     def fetchOWAMPData(self, source, destination, secondsAgo):
 
 
-        """Fetches externally at the current site throughput data as specified by the query.
+        """Fetches externally at the current site OWAMP data as specified by the query.
 
         Keyword arguments:
         source -- perfSonar resource hostname or address for the source
@@ -488,8 +487,8 @@ class PerfSonarAccessor(object):
         with a vaild site address.
         
         Postconditions:
-        currentThroughputResults will be populated with throughput data specified in the source,
-        destination and secondsAgo query.  This can be accessed by calling getCurrentThroughputResults. 
+        currentOWAMPData will be populated with OWAMP data specified in the source,
+        destination and secondsAgo query.  This can be accessed by calling getCurrentOWAMPData. 
 
         Throws:
         If currentSite is None or empty then an exception is thrown.  This can be avoided by setting the current
@@ -523,6 +522,7 @@ class PerfSonarAccessor(object):
                 row['value_buckets'] = value_buckets_parsed
             except Exception: 
                 pass
+				
     def fetchProjectList(self):
 
         """Fetches externally at the global lookup service the project list.
@@ -550,7 +550,7 @@ class PerfSonarAccessor(object):
 
     def projectExists(self, projectName):
 
-        """Returns true if the provided projectName as an argument exists in the global lookup service
+        """Returns true if the provided projectName as an argument exists in the global lookup service.
 
         Keyword arguments:
         projectName -- Name of project to verify with the global lookup service
