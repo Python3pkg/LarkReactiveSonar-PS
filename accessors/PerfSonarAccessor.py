@@ -14,6 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+#This is a simple python wrapper/bindings to a perl perfSonar abstraction layer.  This module enables easy interaction with perfSonar data including OWAMP, Throughtput, Project and site querying.  Read more about
+#perfSonar at http://www.perfsonar.net/ and the Holland Computing Center at http://hcc.unl.edu/
+
 import sys, os
 import csv
 import subprocess
