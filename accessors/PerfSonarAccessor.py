@@ -18,6 +18,11 @@
 #perfSonar at http://www.perfsonar.net/ and the Holland Computing Center at http://hcc.unl.edu/
 
 import sys, os
+
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
+
 import csv
 import subprocess
 import time
