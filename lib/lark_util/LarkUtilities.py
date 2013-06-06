@@ -111,7 +111,7 @@ class LarkUtilities(object):
                 tuple = (haystack[index][0], haystack[index][1], needle);
                 return tuple
 
-    @staticmethod
+    #@staticmethod
     #def whois(ipAddressOrHostName, attributes):
         
          
