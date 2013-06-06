@@ -112,7 +112,7 @@ class LarkUtilities(object):
                 return tuple
 
     @staticmethod
-    def whois(ipAddressOrHostName, attributes):
+    #def whois(ipAddressOrHostName, attributes):
         
          
 
