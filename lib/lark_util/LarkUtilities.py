@@ -19,13 +19,22 @@ import sys, os
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
+import socket
 
 sys.path.append('../../accessors')
 import urllib2
 import BeautifulSoup
 import PerfSonarAccessor
-import socket
- 
+
+"""
+This python module contains a mechanisms and assorted methods for lark tasks
+To generate HTML documentation for this module issue the
+command:
+
+    pydoc -w LarkUtilities
+
+"""
+
 __author__ =  'Andrew B. Koerner'
 __email__=  'AndrewKoerner.b@gmail.com'
 
@@ -39,10 +48,10 @@ class LarkUtilities(object):
         return str
     
     @staticmethod
-    def locatePerfSonarInstances(ISO_3166CountryCode, projectName):
+    def locatePerfSonarInstances(ISO_3166CountryCode, perfSonarProjectName):
 
         matchingCountryPerfSonarList = []
-        perfSonarAccessor = PerfSonarAccessor.PerfSonarAccessor(projectName)
+        perfSonarAccessor = PerfSonarAccessor.PerfSonarAccessor(perfSonarProjectName)
         perfSonarResources = perfSonarAccessor.getProjectSiteList()
 
         for perfSonarResource in perfSonarResources:
@@ -66,21 +75,26 @@ class LarkUtilities(object):
                 continue
             if currentISO_3166_1_ALPHA_2_CountryCode[0] == None:
                 continue
+            #print ISO_3166CountryCode.lower() + " = " + currentISO_3166_1_ALPHA_2_CountryCode[0].lower() + " : " + ISO_3166CountryCode.lower() == currentISO_3166_1_ALPHA_2_CountryCode[0].lower()
             if ISO_3166CountryCode.lower() == currentISO_3166_1_ALPHA_2_CountryCode[0].lower():
                 matchingCountryPerfSonarList.append(tempTouple)
-
-        print matchingCountryPerfSonarList
+        
+        print perfSonarResources
+        #print matchingCountryPerfSonarList
         return matchingCountryPerfSonarList
     
     @staticmethod
     def ISO_3166_1_ALPHA_2_IpAddressGeoLocate(ipAddress):
 
-        geody = "http://www.geody.com/geoip.php?ip=" + ipAddress
-        html_page = urllib2.urlopen(geody).read()
-        soup = BeautifulSoup.BeautifulSoup(html_page)
-        paragraph = soup('p')[3]
-        geo_txt = re.sub(r'<.*?>', '', str(paragraph))
-
+        try:
+            geody = "http://www.geody.com/geoip.php?ip=" + ipAddress
+            htmlDocument = urllib2.urlopen(geody).read()
+            soup = BeautifulSoup.BeautifulSoup(htmlDocument)
+            paragraph = soup('p')[3]
+            geo_txt = re.sub(r'<.*?>', '', str(paragraph))
+        except:
+            print htmlDocument
+            return
         haystack = []
         dname = os.path.dirname(abspath)
         os.chdir(dname)
@@ -97,4 +111,8 @@ class LarkUtilities(object):
                 tuple = (haystack[index][0], haystack[index][1], needle);
                 return tuple
 
+    @staticmethod
+    def whois(ipAddressOrHostName, attributes):
+        
+         
 
