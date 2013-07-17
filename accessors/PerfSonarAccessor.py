@@ -19,14 +19,15 @@
 
 import sys, os
 
-abspath = os.path.abspath(__file__)
-dname = os.path.dirname(abspath)
-os.chdir(dname)
+#abspath = os.path.abspath(__file__)
+#dname = os.path.dirname(abspath)
+#os.chdir(dname)
 
 import csv
 import subprocess
 import time
 import decimal
+import simplejson
 
 """
 This python wrapper module contains a mechanisms for interacting with the
@@ -54,7 +55,7 @@ class PerfSonarAccessor(object):
 
     currentThroughputData = None;
     currentOWAMPData = None;
-    
+
     def __init__(self, projectName = "Wisconsin", globalLookupService = "http://ps4.es.net:9990/perfSONAR_PS/services/gLS"):
         
         """Set default attribute values only
@@ -293,8 +294,10 @@ class PerfSonarAccessor(object):
         command = "perl get_ls_sitelist.pl"
         process = subprocess.Popen(command + " \"" + self.projectName + "\" " + self.globalLookupService, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
         stdout, stderr = process.communicate()
-        self.projectSiteList = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter='\n', skipinitialspace=True, fieldnames=['site'])
-        self.projectSiteList = [r['site'] for r in self.projectSiteList]
+        self.projectSiteList = simplejson.loads(stdout.decode('utf-8'))["site"]
+        self.projectSiteList = [str(element) for element in self.projectSiteList]
+        #self.projectSiteList = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter='\n', skipinitialspace=True, fieldnames=['site'])
+        #self.projectSiteList = [r['site'] for r in self.projectSiteList]
 
     def getCurrentThroughputData(self):
 
@@ -317,7 +320,7 @@ class PerfSonarAccessor(object):
         if(self.currentThroughputData == None):
             raise Exception("ERROR: currentThroughputData not set try calling fetchThroughputData") 
             return None
-        return list(self.currentThroughputResults)
+        return list(self.currentThroughputData)
 
     def getCurrentOWAMPData(self):
 
@@ -362,7 +365,7 @@ class PerfSonarAccessor(object):
         """
 
         if(self.siteEndPointPairListWithThroughputData == None):
-            raise Exception("ERROR: currentThroughputData not set") 
+            raise Exception("ERROR: siteEndPointPairListWithThroughputData not set") 
             return None
         return list(self.siteEndPointPairListWithThroughputData)
 
@@ -413,9 +416,11 @@ class PerfSonarAccessor(object):
         command = command + " " + self.currentSite
 
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
+        #print command
         stdout, stderr = process.communicate()
-
-        self.siteEndPointPairListWithThroughputData = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter=' ', skipinitialspace=True, fieldnames=['source', 'destination'])
+        self.siteEndPointPairListWithThroughputData = simplejson.loads(stdout.decode('utf-8'))["endpoint_pair"]
+        #self.siteEndPointPairListWithThroughputData = [str(element) for element in self.siteEndPointPairListWithThroughputData]
+        #self.siteEndPointPairListWithThroughputData = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter=' ', skipinitialspace=True, fieldnames=['source', 'destination'])
 
     def fetchSiteEndPointPairListWithOWAMPData(self):
 
@@ -474,11 +479,13 @@ class PerfSonarAccessor(object):
         if(secondsAgo == "" or secondsAgo == None):
            secondsAgo = 3600
 
+        now = int(time.time())
         command = "perl get_throughput_between_two_endpoints.pl"
-        command = command + " " + self.currentSite + " " + source + " " + destination + " " + str(secondsAgo)
+        command = command + " " + self.currentSite + " " + source + " " + destination + " " + str(now - secondsAgo) + " " + str(now)
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
         stdout, stderr = process.communicate()
-        self.currentThroughputData = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter=',', skipinitialspace=True, fieldnames=['throughput', 'timestamp'])
+        self.currentThroughputData = simplejson.loads(stdout.decode('utf-8'))["throughput_result"]
+        #self.currentThroughputData = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter=',', skipinitialspace=True, fieldnames=['throughput', 'timestamp'])
 
     def fetchOWAMPData(self, source, destination, secondsAgo):
 
@@ -530,7 +537,7 @@ class PerfSonarAccessor(object):
                 row['value_buckets'] = value_buckets_parsed
             except Exception: 
                 pass
-				
+
     def fetchProjectList(self):
 
         """Fetches externally at the global lookup service the project list.
@@ -553,8 +560,10 @@ class PerfSonarAccessor(object):
         command = "perl get_gls_projects.pl"
         process = subprocess.Popen(command + " " + self.globalLookupService, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
         stdout, stderr = process.communicate()
-        self.projectList = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter='\n', skipinitialspace=True, fieldnames=['project'])
-        self.projectList = list(self.projectList)
+        self.projectList = simplejson.loads(stdout.decode('utf-8'))#["project"]
+        self.projectList = [str(element) for element in self.projectList]
+        #self.projectList = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter='\n', skipinitialspace=True, fieldnames=['project'])
+        #self.projectList = list(self.projectList)
 
     def projectExists(self, projectName):
 

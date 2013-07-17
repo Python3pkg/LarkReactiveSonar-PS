@@ -75,7 +75,8 @@ use XML::LibXML;
 use XML::Twig;
 use XML::DOM;
 use perfSONAR_PS::Common qw( find findvalue );
-
+use JSON;
+use Data::Dumper;
 
 
 sub initiate_gls{
@@ -201,8 +202,7 @@ sub get_ls_sitelist{
 
 	#print $gLs
 	
-	my @sitelist_list = ();
-	my $array_size = 0;
+	my @site_hash = ();
 	
 	my $xls_gls_sitelist = get_gls_sitelist("project:".$project_name);
 	my $xls_hls_sitelist = get_hls_sitelist("project:".$project_name); 
@@ -238,7 +238,7 @@ sub get_ls_sitelist{
 		);
 
 		my $resParser = XML::LibXML->new();
-
+		
 		if($hLSResult->{response} && $hLSResult->{response} =~ /^</)
 		{
 
@@ -259,19 +259,28 @@ sub get_ls_sitelist{
 				
 
 
-				print $output."\n";
-				push(@sitelist_list,$bwctlList->get_node($j)->string_value()); 
+				#print $output."\n";
+				push( @site_hash, $output);
+				#push(@sitelist_list,$bwctlList->get_node($j)->string_value()); 
 			}
 		}
 	}
-	$array_size = @sitelist_list;
+	
+	%hash = map { $_ => "site" } @site_hash,;
+	
+	my %nHash;
+	push @{ $nHash{ $hash{$_} } }, $_ for keys %hash;
+	my $json = JSON->new->allow_nonref;
+	my $json_projects = encode_json(\%nHash);
+	
+	print $json_projects;
+	
 
 }
 
 sub get_gls_projects{
 	($gLs) = @_;
 	
-	my @project_list = ();
 	my $array_size = 0;
 
 	my $xls_keyword = get_gls_keyword();
@@ -284,13 +293,26 @@ sub get_gls_projects{
 	{
 		return;
 	}
-	@project_list = parse_query_keyword($gLSResult);
-
-	for my $element_1(@project_list)
-	{
-		print $element_1 . "\n";
+	my @projects = parse_query_keyword($gLSResult);
+	my @projects_hash;
+	
+	#@project_list = map {@$_} @$project_list;
+	for my $project(@projects){
+		my $find = "project:";
+		my $replace = "";
+		$project =~ s/$find/$replace/g;
 	}
-
+	
+	#my $projects = {'projects' => @temp_projects};
+	%hash = $projects;
+	
+	my %nHash;
+	push @{ $nHash{ $hash{$_} } }, $_ for keys %hash;
+	my $json = JSON->new->allow_nonref;
+	my $json_projects = encode_json(\@projects);
+	
+	print $json_projects;
+	#print scalar(@projects);
 }
 
 sub parse_query_keyword{
@@ -430,16 +452,12 @@ sub return_n_minute_utilization_on_a_specific_interface(){
 sub list_all_endpoints_with_throughput_data_available{
 
 	($site) = @_;
-	
-	my $array_size = 0;
-	my @tmp_src_dst;
-	my @metadata_files;
-	my $src_dst_pair;
 
-	my @src = ();
-	my @dst = ();
+	my @endpoints;
+
+	my @source = ();
+	my @destination = ();
 	my $count = 0;
-	my $flag_src_dst;
 
 	my $xls_pairlist = get_xls_pairlist();
 
@@ -464,45 +482,40 @@ sub list_all_endpoints_with_throughput_data_available{
 	
 	my $parser = XML::LibXML->new();
 	my $twig= XML::Twig->new(pretty_print => 'indented');
-	$resultString = "";
-	foreach $metadata(@{$result->{"metadata"}})
-	{
+	my $resultString = "";
+	
+	foreach $metadata(@{$result->{"metadata"}}){
 		$twig->parse($metadata);
-		
 		$resultString .= $twig->sprint;
 	}
 	
 	$resultString = "<data>\n".$resultString."\n</data>";
-
-	#print $resultString;
 	
 	my $parser = XML::LibXML->new();
 	
 	my $doc = $parser->parse_string($resultString);
 
-	@tmp_src_dst = ();
-
-	foreach my $node($doc->getElementsByTagName("nmwg:metadata"))
-	{
-
-
-		push(@metadata_files,$node->getAttribute("id"));
-
-
-		foreach my $tnode($node->getElementsByTagName("nmwgt:src"))
-		{
-
-			$src[$count] = $tnode->getAttribute("value");
+	foreach my $node($doc->getElementsByTagName("nmwg:metadata")){
+		foreach my $tnode($node->getElementsByTagName("nmwgt:src")){
+			$source[$count] = $tnode->getAttribute("value");
 		}
 
-		foreach my $tnode($node->getElementsByTagName("nmwgt:dst"))
-		{
-			$dst[$count] = $tnode->getAttribute("value");
+		foreach my $tnode($node->getElementsByTagName("nmwgt:dst")){
+			$destination[$count] = $tnode->getAttribute("value");
 		}
-	
-		print $src[$count] . " " . $dst[$count++]."\n";
+		my $tempPair = {"source"=>$source[$count], "destination"=>$destination[$count++]};
+		push(@endpoints, $tempPair);
+		
 
 	}
+	
+	my $hash = {"endpoint_pair"=>\@endpoints};
+	
+	my $json = JSON->new->allow_nonref;
+	my $encoded = $json->encode($hash);
+	
+	print $encoded;
+	#print @endpoints;
 }
 
 sub list_all_endpoints_with_one_way_latency_data_available{
@@ -510,7 +523,11 @@ sub list_all_endpoints_with_one_way_latency_data_available{
 	($site) = @_;
 	
 	my $resource = ":8085/perfSONAR_PS/services/pSB";
-
+	my @endpoints;
+	
+	my @source = ();
+	my @destination = ();
+	
 	# Create client
 	my $ma = new perfSONAR_PS::Client::MA( { instance => "http://".$site.$resource } );
 
@@ -533,8 +550,7 @@ sub list_all_endpoints_with_one_way_latency_data_available{
 	my $parser = XML::LibXML->new();
 	my $twig= XML::Twig->new(pretty_print => 'indented');
 	$resultString = "";
-	foreach $metadata(@{$result->{"metadata"}})
-	{
+	foreach $metadata(@{$result->{"metadata"}}){
 		$twig->parse($metadata);
 		
 		$resultString .= $twig->sprint;
@@ -542,12 +558,13 @@ sub list_all_endpoints_with_one_way_latency_data_available{
 	
 	$resultString = "<data>\n".$resultString."\n</data>";
 
+	#print $resultString;
 	
 	my $parser = XML::LibXML->new();
 	
 	my $doc = $parser->parse_string($resultString);
 
-	@tmp_src_dst = ();
+
 
 	foreach my $node($doc->getElementsByTagName("nmwg:metadata"))
 	{
@@ -556,33 +573,35 @@ sub list_all_endpoints_with_one_way_latency_data_available{
 		push(@metadata_files,$node->getAttribute("id"));
 
 
-		foreach my $tnode($node->getElementsByTagName("nmwgt:src"))
-		{
+		foreach my $tnode($node->getElementsByTagName("nmwgt:src")){
 
-			$src[$count] = $tnode->getAttribute("value");
+			$source[$count] = $tnode->getAttribute("value");
 		}
 
-		foreach my $tnode($node->getElementsByTagName("nmwgt:dst"))
-		{
-			$dst[$count] = $tnode->getAttribute("value");
+		foreach my $tnode($node->getElementsByTagName("nmwgt:dst")){
+			$destination[$count] = $tnode->getAttribute("value");
 		}
 	
-		print $src[$count] . " " . $dst[$count++]."\n";
+		my $tempPair = {"source"=>$source[$count], "destination"=>$destination[$count++]};
+		push(@endpoints, $tempPair);
+		
 
 	}
+	
+	my $hash = {"endpoint_pair"=>\@endpoints};
+	
+	my $json = JSON->new->allow_nonref;
+	my $encoded = $json->encode($hash);
+	
+	print $encoded;
 }
 
 sub get_throughput_between_two_endpoints{
 
-	($site, $source, $destination, $secondsAgo) = @_;
-	
-	#source and destination are hostnames
-	
-	#print $source
-	#print $destination
-	
+	($site, $source, $destination, $startUnixTimestamp, $endUnixTimestamp) = @_;
 	
 	my $resource = ":8085/perfSONAR_PS/services/pSB";
+	my @results;
 
 	# Create client
 	my $ma = new perfSONAR_PS::Client::MA( { instance => "http://".$site.$resource } );
@@ -597,18 +616,14 @@ sub get_throughput_between_two_endpoints{
 
 	# Set eventType
 	my @eventTypes = ();
-
-	# Set time range
-	my $end = time;
-	my $start = $end - $secondsAgo;
-
+	
 	# Send request
 	my $result = $ma->setupDataRequest(
 			{
 				subject    => $subject,
 				eventTypes => \@eventTypes,
-				start      => $start,
-				end        => $end,
+				start      => $startUnixTimestamp,
+				end        => $endUnixTimestamp
 			}
 		);
 
@@ -620,30 +635,38 @@ sub get_throughput_between_two_endpoints{
 		$twig->parse($metadata);
 		#SS$twig->print();
 	}
+	
+	#print Dumper($result->{"data"});
+	
 	foreach $data(@{$result->{"data"}}){
 		#print $data;
 		my $doc = $parser->parse_string($data);
 		
-		foreach my $node($doc->getElementsByTagName("iperf:datum"))
-		{
-			print $node->getAttribute("throughput");
-			print ",".$node->getAttribute("timeValue");
-			
-			print "\n";
+		foreach my $node($doc->getElementsByTagName("iperf:datum")){
+			my $tempThroughput = {"throughput"=>$node->getAttribute("throughput"), "timestamp"=>$node->getAttribute("timeValue")};
+			push(@results, $tempThroughput);
 		}
 		
 	}
+	
+	my $hash = {"throughput_result"=>\@results};
+	
+	my $json = JSON->new->allow_nonref;
+	my $encoded = $json->encode($hash);
+	
+	print $encoded;
 }
 
 sub get_one_way_latency_between_two_endpoints{
 
-	($site, $source, $destination, $secondsAgo) = @_;
+	($site, $source, $destination, $startUnixTimestamp, $endUnixTimestamp) = @_;
 
 	#source and destination are 
 	#Supports IPv4 and IPv6
 	
 	my $resource = ":8085/perfSONAR_PS/services/pSB";
-
+	my @results;
+	
 	# Create client
 	my $ma = new perfSONAR_PS::Client::MA( { instance => "http://".$site.$resource } );
 	
@@ -677,55 +700,56 @@ sub get_one_way_latency_between_two_endpoints{
 
 	my @eventTypes = ();
 
-	# Set time range
-	my $end = time;
-	my $start = $end - $secondsAgo;
-
 	# Send the request
+	#print $subject;
 	my $result = $ma->setupDataRequest(
 			{
 				subject    => $subject,
 				eventTypes => \@eventTypes,
-				start      => $start,
-				end        => $end,
+
 			}
 		);
 
 	#Output XML
 	my $parser = XML::LibXML->new();
+	
+	#print Dumper($result);
+	
+	#Output XML
+
 
 	my $twig= XML::Twig->new(pretty_print => 'indented');
 	foreach $metadata(@{$result->{"metadata"}}){
 		$twig->parse($metadata);
-		#SS$twig->print();
+		$twig->print();
 	}
 	foreach $data(@{$result->{"data"}}){
-		#print $data;
+		print $data;
 		my $doc = $parser->parse_string($data);
 		
 		foreach my $node($doc->getElementsByTagName("summary:datum")){
-			print $node->getAttribute("duplicates");
-			print ",";
-			print $node->getAttribute("endTime");
-			print ",";
-			print $node->getAttribute("loss");
-			print ",";
-			print $node->getAttribute("maxError");
-			print ",";
-			print $node->getAttribute("maxTTL");
-			print ",";
-			print $node->getAttribute("max_delay");
-			print ",";
-			print $node->getAttribute("minTTL");
-			print ",";
-			print $node->getAttribute("min_delay");
-			print ",";
-			print $node->getAttribute("sent");
-			print ",";
-			print $node->getAttribute("startTime");
-			print ",";
-			print $node->getAttribute("timeType");
-			print ",";
+			#print $node->getAttribute("duplicates");
+			#print ",";
+			#print $node->getAttribute("endTime");
+			#print ",";
+			#print $node->getAttribute("loss");
+			#print ",";
+			#print $node->getAttribute("maxError");
+			#print ",";
+			#print $node->getAttribute("maxTTL");
+			#print ",";
+			#print $node->getAttribute("max_delay");
+			#print ",";
+			#print $node->getAttribute("minTTL");
+			#print ",";
+			#print $node->getAttribute("min_delay");
+			#print ",";
+			#print $node->getAttribute("sent");
+			#print ",";
+			#print $node->getAttribute("startTime");
+			#print ",";
+			#print $node->getAttribute("timeType");
+			#print ",";
 			
 			my $index = 0;
 			my $nodeList = $node->getElementsByTagName("summary:value_bucket");
@@ -734,14 +758,14 @@ sub get_one_way_latency_between_two_endpoints{
 			foreach my $valueBucket($node->getElementsByTagName("summary:value_bucket")){
 				#print ($node->getElementsByTagName("summary:value_bucket"))->[-1];
 				if($index > 0){
-					print ";";
+					#print ";";
 				}
-				print $valueBucket->getAttribute("count");
-				print  " ".$valueBucket->getAttribute("value");
+				#print $valueBucket->getAttribute("count");
+				#print  " ".$valueBucket->getAttribute("value");
 				
 				$index++;
 			}
-			print "\n";
+			#print "\n";
 		}
 		
 	}
