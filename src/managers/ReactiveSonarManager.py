@@ -34,18 +34,22 @@ __author__ =  'Andrew B. Koerner'
 __email__=  'AndrewKoerner.b@gmail.com'
 
 PERFSONAR_PROJECTS_HTCONDOR_ATTRIBUTE_KEYWORD = "PERFSONAR_PROJECTS"
+PERFSONAR_PREFERRED_GLOBAL_LOOKUP_SERVICE_KEYWORD = "PERFSONAR_PREFERRED_GLOBAL_LOOKUP_SERVICE"
 
 class ReactiveSonarManager(object):
 
     projects = []
     perfSonarAccessors = []
     preferredPerfSonarGLS = None
-
+    projectDiscoveryMode 
 
 
     def __init__(self):
 
         self.projects = HTCondorAccessor.getHTCondorConfigAttribute(PERFSONAR_PROJECTS_HTCONDOR_ATTRIBUTE_KEYWORD)
 
+        if(not self.preferredPerfSonarGLS):
+            self.preferredPerfSonarGLS = "http://ps4.es.net:9990/perfSONAR_PS/services/gLS"
+
         for project in self.projects:
-            self.perfSonarAccessors = PerfSonarAccessor(project, self.preferredPerfSonarGLS)
+            self.perfSonarAccessors = PerfSonarAccessor(project, self.preferredPerfSonarGLS, True)

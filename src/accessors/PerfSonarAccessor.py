@@ -56,7 +56,7 @@ class PerfSonarAccessor(object):
     currentThroughputData = None;
     currentOWAMPData = None;
 
-    def __init__(self, projectName = "Wisconsin", globalLookupService = "http://ps4.es.net:9990/perfSONAR_PS/services/gLS", projectDiscoveryMode = False):
+    def __init__(self, projectName = "Wisconsin", globalLookupService = "http://ps4.es.net:9990/perfSONAR_PS/services/gLS", autoProjectDiscoveryMode = False):
         
         """Set default attribute values only
 
@@ -88,7 +88,7 @@ class PerfSonarAccessor(object):
         if(self.projectName == None):
             self.projectName = "Wisconsin"
 
-        if(projectDiscoveryMode):
+        if(autoProjectDiscoveryMode):
             self.fetchProjectList()
         self.fetchProjectSiteList()
 
