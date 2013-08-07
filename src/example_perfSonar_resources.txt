@@ -1,2 +1,0 @@
-http://hcc-ps01.unl.edu:9995/perfSONAR_PS/services/hLS
-http://hcc-ps02.unl.edu:9995/perfSONAR_PS/services/hLS

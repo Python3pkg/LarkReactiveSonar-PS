@@ -1,4 +1,0 @@
-LarkSonar
-=========
-
-perl perfSonar library
