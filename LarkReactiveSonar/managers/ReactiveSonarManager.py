@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+
+# copyright 2013 UNL Holland Computing Center
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#     you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#  
+#        http://www.apache.org/licenses/LICENSE-2.0
+#  
+#    Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+#This script takes the projects located in the "projects" file and pulls all of the sites for the projects.
+#Each site is interrogated for test data.  For each end point pair a file is created in the cache directory.  
+#Every time this is run the cache dir is cleared.  
+#
+#
+
+from LarkReactiveSonar.accessors.PerfSonarAccessor import PerfSonarAccessor
+from LarkReactiveSonar.accessors.HTCondorAccessor import HTCondorAccessor
+from LarkReactiveSonar.accessors.PersistenceAccessor import PersistenceAccessor
+from LarkReactiveSonar.common.StaticClass import StaticClass
+
+"""
+
+To generate HTML documentation for this issue the following command:
+
+    pydoc -w ReactiveSonarManager
+
+"""
+
+__author__ =  'Andrew B. Koerner'
+__email__=  'AndrewKoerner.b@gmail.com'
+
+PERFSONAR_PROJECTS_HTCONDOR_ATTRIBUTE_KEYWORD = "PERFSONAR_PROJECTS"
+PERFSONAR_PREFERRED_GLOBAL_LOOKUP_SERVICE_KEYWORD = "PERFSONAR_PREFERRED_GLOBAL_LOOKUP_SERVICE"
+PROJECT_DISCOVERY_MODE = False
+PREFERRED_PERF_SONAR_GLOBAL_LOOKUP_SERVICE = "http://ps4.es.net:9990/perfSONAR_PS/services/gLS"
+ROOT_CACHE_DIRECTORY = "cache"
+
+class ReactiveSonarManager(StaticClass):
+
+    @staticmethod
+    def cachePerfSonarData():
+
+        perfSonarProjects = []
+        perfSonarAccessors = []
+
+        perfSonarProjects = HTCondorAccessor.getHTCondorConfigAttribute(PERFSONAR_PROJECTS_HTCONDOR_ATTRIBUTE_KEYWORD)
+        
+        PersistenceAccessor.setupStorageTree(ROOT_CACHE_DIRECTORY)
+        
+        for perfSonarProject in perfSonarProjects:
+            perfSonarAccessors = PerfSonarAccessor(perfSonarProject, PREFERRED_PERF_SONAR_GLOBAL_LOOKUP_SERVICE, PROJECT_DISCOVERY_MODE)
