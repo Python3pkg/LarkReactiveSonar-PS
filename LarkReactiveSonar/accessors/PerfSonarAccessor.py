@@ -537,7 +537,7 @@ class PerfSonarAccessor(object):
         command += now
         command += "\");\'"
 
-         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
         stdout, stderr = process.communicate()
         self.currentThroughputData = simplejson.loads(stdout.decode('utf-8'))["throughput_result"]
         #self.siteEndPointPairListWithThroughputData = [str(element) for element in self.siteEndPointPairListWithThroughputData]
