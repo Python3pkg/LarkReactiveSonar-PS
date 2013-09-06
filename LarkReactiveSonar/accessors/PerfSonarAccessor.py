@@ -522,12 +522,25 @@ class PerfSonarAccessor(object):
            secondsAgo = 3600
 
         now = int(time.time())
-        command = "perl get_throughput_between_two_endpoints.pl"
-        command = command + " " + self.currentSite + " " + source + " " + destination + " " + str(now - secondsAgo) + " " + str(now)
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
+
+        #EXAMPLE CALL: perl -e 'require LarkSonar::Common; print LarkSonar::Common::get_throughput_between_two_endpoints("perfsonar02.hep.wisc.edu" ,"perfsonar02.hep.wisc.edu" , "perfsonar02.cmsaf.mit.edu", "1378000000", "1378410734");'
+
+        command = "perl -e \'require LarkSonar::Common; print LarkSonar::Common::list_all_endpoints_with_throughput_data_available(\""
+        command += self.currentSite
+        command += "\",\""
+        command += source
+        command += "\",\""
+        command += destination
+        command += "\",\""
+        command += secondsAgo
+        command += "\",\""
+        command += now
+        command += "\");\'"
+
+         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
         stdout, stderr = process.communicate()
         self.currentThroughputData = simplejson.loads(stdout.decode('utf-8'))["throughput_result"]
-        self.siteEndPointPairListWithThroughputData = [str(element) for element in self.siteEndPointPairListWithThroughputData]
+        #self.siteEndPointPairListWithThroughputData = [str(element) for element in self.siteEndPointPairListWithThroughputData]
         #self.currentThroughputData = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter=',', skipinitialspace=True, fieldnames=['throughput', 'timestamp'])
 
     def fetchOWAMPData(self, source, destination, secondsAgo):
