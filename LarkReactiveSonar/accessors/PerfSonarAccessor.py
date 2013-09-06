@@ -270,6 +270,37 @@ class PerfSonarAccessor(object):
             return None
         return self.currentSite
 
+    def fetchProjectList(self):
+
+        """Fetches externally at the global lookup service the project list.
+
+        Keyword arguments:
+        NONE
+        
+        Preconditions:
+        globalLookupService must be set, this is done at instantiation or can be done by callig setGlobalLookupService
+        with a vaild global lookup service address
+        
+        Postconditions:
+        projectList will be populated with projects maintained by the global lookup service.  This data is provided via
+        the global lookup service.
+
+        Throws:
+        NONE
+        """
+        #EXAMPLE CALL:  perl -e 'require LarkSonar::Common; print LarkSonar::Common::get_gls_projects("http://ps4.es.net:9990/perfSONAR_PS/services/gLS");'
+
+        command = "perl -e \'require LarkSonar::Common; print LarkSonar::Common::get_gls_projects(\""
+        command += self.globalLookupService
+        command += "\");\'"
+
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        self.projectList = simplejson.loads(stdout.decode('utf-8'))["project"]
+        self.projectList = [str(element) for element in self.projectList]
+        #self.projectList = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter='\n', skipinitialspace=True, fieldnames=['project'])
+        #self.projectList = list(self.projectList)
+
     def fetchProjectSiteList(self):
 
         """Fetches externally at the global lookup service the site list associated with the current set project
@@ -292,8 +323,16 @@ class PerfSonarAccessor(object):
         NONE
         """
 
-        command = "perl get_ls_sitelist.pl"
-        process = subprocess.Popen(command + " \"" + self.projectName + "\" " + self.globalLookupService, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
+        #EXAMPLE CALL:  perl -e 'require LarkSonar::Common; print LarkSonar::Common::get_ls_sitelist("Wisconsin","http://ps4.es.net:9990/perfSONAR_PS/services/gLS");'
+
+        command = "perl -e \'require LarkSonar::Common; print LarkSonar::Common::get_ls_sitelist(\""
+        command += self.projectName
+        command += "\",\""
+        command += self.globalLookupService
+        command += "\");\'"
+
+
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
         stdout, stderr = process.communicate()
         self.projectSiteList = simplejson.loads(stdout.decode('utf-8'))["site"]
         self.projectSiteList = [str(element) for element in self.projectSiteList]
@@ -413,11 +452,13 @@ class PerfSonarAccessor(object):
         NONE
         """
 
-        command = "perl list_all_endpoints_with_throughput_data_available.pl"
-        command = command + " " + self.currentSite
+        #EXAMPLE CALL: perl -e 'require LarkSonar::Common; print LarkSonar::Common::list_all_endpoints_with_throughput_data_available("hcc-ps02.unl.edu");'
 
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
-        #print command
+        command = "perl -e \'require LarkSonar::Common; print LarkSonar::Common::list_all_endpoints_with_throughput_data_available(\""
+        command += self.currentSite
+        command += "\");\'"
+ 
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
         stdout, stderr = process.communicate()
         self.siteEndPointPairListWithThroughputData = simplejson.loads(stdout.decode('utf-8'))["endpoint_pair"]
         #self.siteEndPointPairListWithThroughputData = [str(element) for element in self.siteEndPointPairListWithThroughputData]
@@ -486,6 +527,7 @@ class PerfSonarAccessor(object):
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
         stdout, stderr = process.communicate()
         self.currentThroughputData = simplejson.loads(stdout.decode('utf-8'))["throughput_result"]
+        self.siteEndPointPairListWithThroughputData = [str(element) for element in self.siteEndPointPairListWithThroughputData]
         #self.currentThroughputData = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter=',', skipinitialspace=True, fieldnames=['throughput', 'timestamp'])
 
     def fetchOWAMPData(self, source, destination, secondsAgo):
@@ -538,33 +580,6 @@ class PerfSonarAccessor(object):
                 row['value_buckets'] = value_buckets_parsed
             except Exception: 
                 pass
-
-    def fetchProjectList(self):
-
-        """Fetches externally at the global lookup service the project list.
-
-        Keyword arguments:
-        NONE
-        
-        Preconditions:
-        globalLookupService must be set, this is done at instantiation or can be done by callig setGlobalLookupService
-        with a vaild global lookup service address
-        
-        Postconditions:
-        projectList will be populated with projects maintained by the global lookup service.  This data is provided via
-        the global lookup service.
-
-        Throws:
-        NONE
-        """
-
-        command = "perl get_gls_projects.pl"
-        process = subprocess.Popen(command + " " + self.globalLookupService, shell=True, stdout=subprocess.PIPE, cwd="perfSonar")
-        stdout, stderr = process.communicate()
-        self.projectList = simplejson.loads(stdout.decode('utf-8'))#["project"]
-        self.projectList = [str(element) for element in self.projectList]
-        #self.projectList = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter='\n', skipinitialspace=True, fieldnames=['project'])
-        #self.projectList = list(self.projectList)
 
     def projectExists(self, projectName):
 

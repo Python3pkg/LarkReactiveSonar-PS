@@ -5,6 +5,7 @@ import sys
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+files = ["LarkReactiveSonar/*"]
 
 setup(
     name='LarkReactiveSonar-PS',
@@ -15,6 +16,7 @@ setup(
     scripts=[
         'LarkReactiveSonar/LarkReactiveSonar-PS.py',
       ],
+	package_data = {'package' : files },
     include_package_data=True,
     zip_safe=False,
     url='http://pypi.python.org/pypi/LarkReactiveSonar-PS/',

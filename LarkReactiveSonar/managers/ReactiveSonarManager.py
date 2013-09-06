@@ -24,7 +24,7 @@ from LarkReactiveSonar.accessors.PerfSonarAccessor import PerfSonarAccessor
 from LarkReactiveSonar.accessors.HTCondorAccessor import HTCondorAccessor
 from LarkReactiveSonar.accessors.PersistenceAccessor import PersistenceAccessor
 from LarkReactiveSonar.common.StaticClass import StaticClass
-
+import itertools
 """
 
 To generate HTML documentation for this issue the following command:
@@ -40,7 +40,9 @@ PERFSONAR_PROJECTS_HTCONDOR_ATTRIBUTE_KEYWORD = "PERFSONAR_PROJECTS"
 PERFSONAR_PREFERRED_GLOBAL_LOOKUP_SERVICE_KEYWORD = "PERFSONAR_PREFERRED_GLOBAL_LOOKUP_SERVICE"
 PROJECT_DISCOVERY_MODE = False
 PREFERRED_PERF_SONAR_GLOBAL_LOOKUP_SERVICE = "http://ps4.es.net:9990/perfSONAR_PS/services/gLS"
-ROOT_CACHE_DIRECTORY = "cache"
+ROOT_CACHE_DIRECTORY = "~/cache"
+SECONDS_AGO_TO_CACHE = 28800# 8 hours
+
 
 class ReactiveSonarManager(StaticClass):
 
@@ -49,10 +51,43 @@ class ReactiveSonarManager(StaticClass):
 
         perfSonarProjects = []
         perfSonarAccessors = []
+        tempPerfSonarAccessor = None
+        tempProjectSiteList = []
+        tempSiteEndPointPairListWithThroughputData = []
+        throughputData = []
 
+
+        #get the project names of interest to condor
         perfSonarProjects = HTCondorAccessor.getHTCondorConfigAttribute(PERFSONAR_PROJECTS_HTCONDOR_ATTRIBUTE_KEYWORD)
         
+        #initialize data storage file structure for the throughput data
         PersistenceAccessor.setupStorageTree(ROOT_CACHE_DIRECTORY)
-        
+
+        #iterate over all projects of intrest to condor
         for perfSonarProject in perfSonarProjects:
-            perfSonarAccessors = PerfSonarAccessor(perfSonarProject, PREFERRED_PERF_SONAR_GLOBAL_LOOKUP_SERVICE, PROJECT_DISCOVERY_MODE)
+
+            #iinstantiate a perfSonarAccessor for the project
+            tempPerfSonarAccessor = PerfSonarAccessor(perfSonarProject, PREFERRED_PERF_SONAR_GLOBAL_LOOKUP_SERVICE, PROJECT_DISCOVERY_MODE)
+            
+            #get the list of sites associated with the project
+            tempProjectSiteList = tempPerfSonarAccessor.getProjectSiteList()
+
+            #iterate over the sites associated with the project
+            for site in tempProjectSiteList:
+
+                #get endpoint pair list for the site that has associated throughput data available
+                tempPerfSonarAccessor.setCurrentSite(site)
+                tempPerfSonarAccessor.fetchSiteEndPointPairListWithThroughputData()
+                tempSiteEndPointPairListWithThroughputData = tempPerfSonarAccessor.getSiteEndPointPairListWithThroughputData()
+
+                #iterate over endpoint pair list
+                for endpointPairWithThroughputData in tempSiteEndPointPairListWithThroughputData:
+                    tempPerfSonarAccessor.fetchThroughputData(endpointPairWithThroughputData["source"], endpointPairWithThroughputData["destination"], SECONDS_AGO_TO_CACHE)
+                    print tempPerfSonarAccessor.getCurrentThroughputData()
+            perfSonarAccessors.append(tempPerfSonarAccessor)
+
+         
+
+
+
+        return perfSonarAccessors;
