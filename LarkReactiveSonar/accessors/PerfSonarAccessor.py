@@ -492,7 +492,7 @@ class PerfSonarAccessor(object):
 
         self.siteEndPointPairListWithOWAMPData = csv.DictReader(stdout.decode('ascii').splitlines(), delimiter=' ', skipinitialspace=True, fieldnames=['source', 'destination'])
 
-    def fetchThroughputData(self, source, destination, secondsAgo):
+    def fetchThroughputData(self, source = "", destination = "", secondsAgo = 0):
 
 
         """Fetches externally at the current site throughput data as specified by the query.
@@ -525,17 +525,19 @@ class PerfSonarAccessor(object):
 
         #EXAMPLE CALL: perl -e 'require LarkSonar::Common; print LarkSonar::Common::get_throughput_between_two_endpoints("perfsonar02.hep.wisc.edu" ,"perfsonar02.hep.wisc.edu" , "perfsonar02.cmsaf.mit.edu", "1378000000", "1378410734");'
 
-        command = "perl -e \'require LarkSonar::Common; print LarkSonar::Common::list_all_endpoints_with_throughput_data_available(\""
+        command = "perl -e \'require LarkSonar::Common; print LarkSonar::Common::get_throughput_between_two_endpoints(\""
         command += self.currentSite
         command += "\",\""
-        command += source
+        command += str(source)
         command += "\",\""
-        command += destination
+        command += str(destination)
         command += "\",\""
-        command += secondsAgo
+        command += str(secondsAgo)
         command += "\",\""
-        command += now
+        command += str(now)
         command += "\");\'"
+
+
 
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
         stdout, stderr = process.communicate()

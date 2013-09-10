@@ -38,12 +38,16 @@ __email__=  'AndrewKoerner.b@gmail.com'
 
 class PersistenceAccessor(StaticClass):
     @staticmethod
-    def setupStorageTree(treeRoot):
-        try: 
-           shutil.rmtree(treeRoot)
-           os.makedirs(treeRoot)
-        except Exception, exception:
-            print exception
+    def setupStorageTree(path):
+        try:
+           if(os.path.isdir(path)):
+               shutil.rmtree(path)
+           os.makedirs(path)
+        except OSError as exc: # Python >2.5
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else: raise
+
 
     @staticmethod
     def saveData(location, data):
