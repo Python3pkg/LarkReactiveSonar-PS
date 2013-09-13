@@ -17,8 +17,9 @@
 #This is a simple python wrapper/bindings to a perl perfSonar abstraction layer.  This module enables easy interaction with perfSonar data including OWAMP, Throughtput, Project and site querying.  Read more about
 #perfSonar at http://www.perfsonar.net/ and the Holland Computing Center at http://hcc.unl.edu/
 
-import sys, os
+import sys, os, time
 import htcondor
+import classad
 from LarkReactiveSonar.common.StaticClass import StaticClass
 
 """
@@ -41,3 +42,15 @@ class HTCondorAccessor(StaticClass):
         attributes = result.split(",");
         attributes = [attribute.strip() for attribute in attributes]
         return attributes
+
+    @staticmethod
+    def newClassAd(classAdType, classAdName, data):
+
+        ad = classad.ClassAd()
+        ad['MyType'] = classAdType
+        ad['Name'] = clasAdName
+
+        for key in data:
+            ad[key] = data[key]
+
+       ad['Timestamp'] = time.time()

@@ -88,15 +88,22 @@ class ReactiveSonarManager(StaticClass):
                 tempSitePath = ROOT_CACHE_DIRECTORY+"/"+tempPerfSonarAccessor.getProjectName()+"/"+tempPerfSonarAccessor.getCurrentSite()
                 PersistenceAccessor.setupStorageTree(tempSitePath)
 
+                #make dir for throughput data
+                PersistenceAccessor.setupStorageTree(tempSitePath+"/throughput")
+                #make dir for owamp data
+                PersistenceAccessor.setupStorageTree(tempSitePath+"/owamp")
+
                 #iterate over endpoint pair list
                 for endpointPairWithThroughputData in tempSiteEndPointPairListWithThroughputData:
-                    tempPerfSonarAccessor.fetchThroughputData(endpointPairWithThroughputData["source"], endpointPairWithThroughputData["destination"], SECONDS_AGO_TO_CACHE)
-                    tempEndpointPairFileName = "source_"+endpointPairWithThroughputData["source"]+"_destination_"+endpointPairWithThroughputData["destination"]
-                    PersistenceAccessor.saveData(tempSitePath+"/"+tempEndpointPairFileName, tempPerfSonarAccessor.getCurrentThroughputData())
+                    if(endpointPairWithThroughputData["source"] != None and endpointPairWithThroughputData["destination"] != None):
+                        tempPerfSonarAccessor.fetchThroughputData(endpointPairWithThroughputData["source"], endpointPairWithThroughputData["destination"], SECONDS_AGO_TO_CACHE)
+                        tempEndpointPairFileName = "source_"+endpointPairWithThroughputData["source"]+"_destination_"+endpointPairWithThroughputData["destination"]
+                        PersistenceAccessor.saveData(tempSitePath+"/throughput/"+tempEndpointPairFileName, tempPerfSonarAccessor.getCurrentThroughputData())
             perfSonarAccessors.append(tempPerfSonarAccessor)
 
-         
+    @staticmethod
+    def pushDataToCondor():
+
+        infos = PersistenceAccessor.getDirectoryInfos("perfSonarCache")
 
 
-
-        return perfSonarAccessors;

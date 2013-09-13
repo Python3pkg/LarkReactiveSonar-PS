@@ -58,3 +58,11 @@ class PersistenceAccessor(StaticClass):
     def loadData(location):
         with open(location, 'rb') as file:
             return cPickle.load(file)
+
+    @staticmethod
+    def getDirectoryInfos(currentDir):
+        infos = []
+        for root, dirs, files in os.walk(currentDir): # Walk directory tree
+            for f in files:
+                infos.append(FileInfo(f,root))
+        return infos
