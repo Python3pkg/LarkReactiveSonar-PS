@@ -62,7 +62,8 @@ class PersistenceAccessor(StaticClass):
     @staticmethod
     def getDirectoryInfos(currentDir):
         infos = []
-        for root, dirs, files in os.walk(currentDir): # Walk directory tree
+        for root, dirs, files in os.walk(currentDir):
             for f in files:
-                infos.append(FileInfo(f,root))
+                temp = root, f
+                infos.append(temp)
         return infos
