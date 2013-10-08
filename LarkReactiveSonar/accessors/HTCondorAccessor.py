@@ -38,19 +38,47 @@ class HTCondorAccessor(StaticClass):
     
     @staticmethod
     def getHTCondorConfigAttribute(attributeName):
-        result = htcondor.param[attributeName]
-        attributes = result.split(",");
-        attributes = [attribute.strip() for attribute in attributes]
+        try:
+            result = htcondor.param[attributeName]
+            attributes = result.split(",");
+            attributes = [attribute.strip() for attribute in attributes]
+        except KeyError:
+            #TODO: log warning to some condor log
+            attributes = []
+        except:
+            if(result):
+                attributes = result
+            else:
+                attributes = []
+
         return attributes
 
     @staticmethod
-    def newClassAd(classAdType, classAdName, data):
+    def newClassAds(datum, classAdType = "generic", classAdName = "PYTHON HTCONDOR ACCESSOR"):
 
-        ad = classad.ClassAd()
-        ad['MyType'] = classAdType
-        ad['Name'] = clasAdName
+        classAds = []
+        
+        print "classAdType"+" "+classAdType
+        print "classAdName"+" "+classAdName
+        print len(datum)
+        #build classads
+        for data in datum:
+            
+            ad = classad.ClassAd()
+            ad['MyType'] = classAdType
+            ad['Name'] = classAdName
+            for key in data:
 
-        for key in data:
-            ad[key] = data[key]
+                print "key: "+key+ " value: "+ data[key]
+                ad[key] = data[key]
 
-        ad['Timestamp'] = time.time()
+                print key
+
+            ad['Timestamp'] = time.time()
+            
+            classAds.append(ad)
+        print "Number of ClassAds: "+str(len(classAds))
+        collector = htcondor.Collector()
+        collector.advertise(classAds)
+        master_ad = collector.locate(condor.DaemonTypes.Master)
+        htcondor.send_command(master_ad, htcondor.DaemonCommands.Reconfig)

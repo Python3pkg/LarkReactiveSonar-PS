@@ -45,7 +45,7 @@ PERFSONAR_PREFERRED_GLOBAL_LOOKUP_SERVICE_KEYWORD = "PERFSONAR_PREFERRED_GLOBAL_
 PROJECT_DISCOVERY_MODE = False
 PREFERRED_PERFSONAR_GLOBAL_LOOKUP_SERVICE = "http://ps4.es.net:9990/perfSONAR_PS/services/gLS"
 ROOT_CACHE_DIRECTORY = "perfSonarCache"
-SECONDS_AGO_TO_CACHE = 28800# 8 hours
+SECONDS_AGO_TO_CACHE = 7200
 PERFSONAR_CLASSAD_NAME = "PERFSONAR"
 PERFSONAR_CLASSAD_TYPE = "generic"
 
@@ -65,15 +65,18 @@ class ReactiveSonarManager(StaticClass):
         #get the project names of interest to condor
         perfSonarProjects = HTCondorAccessor.getHTCondorConfigAttribute(PERFSONAR_PROJECTS_HTCONDOR_ATTRIBUTE_KEYWORD)
         
+        
         #initialize data storage file structure for the throughput data
         
         PersistenceAccessor.setupStorageTree(ROOT_CACHE_DIRECTORY)
 
         #iterate over all projects of intrest to condor
         for perfSonarProject in perfSonarProjects:
-
+            
+            #print perfSonarProject
+            
             #iinstantiate a perfSonarAccessor for the project
-            tempPerfSonarAccessor = PerfSonarAccessor(perfSonarProject, PREFERRED_PERF_SONAR_GLOBAL_LOOKUP_SERVICE, PROJECT_DISCOVERY_MODE)
+            tempPerfSonarAccessor = PerfSonarAccessor(perfSonarProject, PREFERRED_PERFSONAR_GLOBAL_LOOKUP_SERVICE, PROJECT_DISCOVERY_MODE)
             
             #make dir for project
             PersistenceAccessor.setupStorageTree(ROOT_CACHE_DIRECTORY+"/"+tempPerfSonarAccessor.getProjectName())
@@ -107,39 +110,56 @@ class ReactiveSonarManager(StaticClass):
             perfSonarAccessors.append(tempPerfSonarAccessor)
 
     @staticmethod
-    def pushDataToCondor():
+    def pushCachedPerfSonarDataToHTCondor():
 
         timezone = tz.tzutc()
 
         infos = PersistenceAccessor.getDirectoryInfos("perfSonarCache")
+        datum = []
         for info in infos:
             path = info[0]
             file = info[1]
             absoluteFilePath = path+"/"+file
             pathSplit = path.split("/")
+            fileSplit = file.split("_")
+
             project = pathSplit[1]
             site = pathSplit[2]
+            source = fileSplit[1]
+            destination = fileSplit[3]
+
             throughputResults = PersistenceAccessor.loadData(absoluteFilePath)
             decimal.getcontext().prec=4
 
             sum = decimal.Decimal(0)
+            
+            
+
             for throughputResult in throughputResults:
 
                 sum += decimal.Decimal(str(throughputResult["throughput"]))
                 lastThroughputResult = throughputResult
             if(len(throughputResults)>0):
-            average = sum/decimal.Decimal(len(throughputResults))
+              average = sum/decimal.Decimal(len(throughputResults))
 
-             data = {}
+            data = {}
+            
+            
+            data["Project"] = project
+            data["Site"] = site
+            data["Source"] = source
+            data["Destination"] = destination
 
-             data["AverageThroughput"] = str(average.normalize())
-             data["MostRecentThroughput"] = lastThroughputResult["throughput"]
-             data["MostRecentThroughputTimestamp"] = lastThroughputResult["timestamp"]
+            data["AverageThroughput"] = str(average.normalize())
+            data["MostRecentThroughput"] = str(lastThroughputResult["throughput"])
+            data["MostRecentThroughputTimestamp"] = str(lastThroughputResult["timestamp"])
 
-             data["AverageLatency"] = ""
-             data["MostRecentLatency"] = ""
-             data["TimePeriodForAverages"] = str(SECONDS_AGO_TO_CACHE)
+            data["AverageLatency"] = "0"
+            data["MostRecentLatency"] = "0"
+            data["TimePeriodForAverages"] = str(SECONDS_AGO_TO_CACHE)
 
-             HTCondorAccessor.newClassAd(PERFSONAR_CLASSAD_TYPE, PERFSONAR_CLASSAD_NAME, data)
+            datum.append(data)
+
+        HTCondorAccessor.newClassAds(datum, PERFSONAR_CLASSAD_TYPE, PERFSONAR_CLASSAD_NAME)
 
 
