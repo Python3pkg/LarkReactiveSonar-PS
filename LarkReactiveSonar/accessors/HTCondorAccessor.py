@@ -52,33 +52,40 @@ class HTCondorAccessor(StaticClass):
                 attributes = []
 
         return attributes
-
+ 
     @staticmethod
-    def newClassAds(datum, classAdType = "generic", classAdName = "PYTHON HTCONDOR ACCESSOR"):
+    def newClassAds(datum, classAdType = "GenericAd"):
 
         classAds = []
-        
-        print "classAdType"+" "+classAdType
-        print "classAdName"+" "+classAdName
-        print len(datum)
+        i = 0
+        #print "classAdType"+" "+classAdType
+        #print "classAdName"+" "+classAdName
+        #print len(datum)
         #build classads
         for data in datum:
             
             ad = classad.ClassAd()
             ad['MyType'] = classAdType
-            ad['Name'] = classAdName
+            ad['Name'] = data['PerfSonarSite']+"-NetworkTestResults-"+str(i)
             for key in data:
 
-                print "key: "+key+ " value: "+ data[key]
+                #print "key: "+key+ " value: "+ data[key]
                 ad[key] = data[key]
 
-                print key
+                #print key
 
-            ad['Timestamp'] = time.time()
+            ad['Timestamp'] = str(time.time())
             
+            adfile = open('perfSonarTest' +str(i) + '.ad', 'w+')
+            print>>adfile , ad
+            adfile.close()
             classAds.append(ad)
-        print "Number of ClassAds: "+str(len(classAds))
-        collector = htcondor.Collector()
+            i+=1
+
+
+        collector = htcondor.Collector(htcondor.param["COLLECTOR_HOST"])
+        
         collector.advertise(classAds)
-        master_ad = collector.locate(condor.DaemonTypes.Master)
+
+        master_ad = collector.locate(htcondor.DaemonTypes.Master)
         htcondor.send_command(master_ad, htcondor.DaemonCommands.Reconfig)

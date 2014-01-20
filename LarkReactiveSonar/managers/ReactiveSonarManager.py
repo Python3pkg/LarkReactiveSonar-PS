@@ -46,8 +46,8 @@ PROJECT_DISCOVERY_MODE = False
 PREFERRED_PERFSONAR_GLOBAL_LOOKUP_SERVICE = "http://ps4.es.net:9990/perfSONAR_PS/services/gLS"
 ROOT_CACHE_DIRECTORY = "perfSonarCache"
 SECONDS_AGO_TO_CACHE = 7200
-PERFSONAR_CLASSAD_NAME = "PERFSONAR"
-PERFSONAR_CLASSAD_TYPE = "generic"
+PERFSONAR_CLASSAD_NAME = ""
+PERFSONAR_CLASSAD_TYPE = "PerfSonar"
 
 class ReactiveSonarManager(StaticClass):
 
@@ -74,10 +74,14 @@ class ReactiveSonarManager(StaticClass):
         for perfSonarProject in perfSonarProjects:
             
             #print perfSonarProject
-            
-            #iinstantiate a perfSonarAccessor for the project
-            tempPerfSonarAccessor = PerfSonarAccessor(perfSonarProject, PREFERRED_PERFSONAR_GLOBAL_LOOKUP_SERVICE, PROJECT_DISCOVERY_MODE)
-            
+            try:
+                #iinstantiate a perfSonarAccessor for the project
+                tempPerfSonarAccessor = PerfSonarAccessor(perfSonarProject, PREFERRED_PERFSONAR_GLOBAL_LOOKUP_SERVICE, PROJECT_DISCOVERY_MODE)
+            except:
+                 #no project results
+                 print "Empty perfSonar Project: "+perfSonarProject
+                 continue
+
             #make dir for project
             PersistenceAccessor.setupStorageTree(ROOT_CACHE_DIRECTORY+"/"+tempPerfSonarAccessor.getProjectName())
             
@@ -113,7 +117,7 @@ class ReactiveSonarManager(StaticClass):
     def pushCachedPerfSonarDataToHTCondor():
 
         timezone = tz.tzutc()
-
+        lastThroughputResult = {'throughput':0, 'timestamp':''}
         infos = PersistenceAccessor.getDirectoryInfos("perfSonarCache")
         datum = []
         for info in infos:
@@ -132,21 +136,22 @@ class ReactiveSonarManager(StaticClass):
             decimal.getcontext().prec=4
 
             sum = decimal.Decimal(0)
-            
+            average = decimal.Decimal(0)
             
 
             for throughputResult in throughputResults:
 
                 sum += decimal.Decimal(str(throughputResult["throughput"]))
                 lastThroughputResult = throughputResult
+
             if(len(throughputResults)>0):
               average = sum/decimal.Decimal(len(throughputResults))
 
             data = {}
             
             
-            data["Project"] = project
-            data["Site"] = site
+            data["PerfSonarProject"] = project
+            data["PerfSonarSite"] = site
             data["Source"] = source
             data["Destination"] = destination
 
@@ -157,9 +162,8 @@ class ReactiveSonarManager(StaticClass):
             data["AverageLatency"] = "0"
             data["MostRecentLatency"] = "0"
             data["TimePeriodForAverages"] = str(SECONDS_AGO_TO_CACHE)
+            if average != 0:
+                datum.append(data)
+                print average
 
-            datum.append(data)
-
-        HTCondorAccessor.newClassAds(datum, PERFSONAR_CLASSAD_TYPE, PERFSONAR_CLASSAD_NAME)
-
-
+        HTCondorAccessor.newClassAds(datum, PERFSONAR_CLASSAD_TYPE)
