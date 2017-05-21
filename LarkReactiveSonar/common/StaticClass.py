@@ -26,9 +26,7 @@ class StaticClassError(Exception):
     pass
 
 
-class StaticClass:
-    __metaclass__ = abc.ABCMeta
-
+class StaticClass(metaclass=abc.ABCMeta):
     def __new__(cls, *args, **kw):
         raise StaticClassError("%s is a static class and cannot be initiated."
                                 % cls)

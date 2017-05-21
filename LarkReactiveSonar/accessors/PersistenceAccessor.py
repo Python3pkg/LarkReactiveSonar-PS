@@ -21,8 +21,8 @@
 #
 import sys, os
 import shutil
-import PerfSonarAccessor
-import cPickle
+from . import PerfSonarAccessor
+import pickle
 from LarkReactiveSonar.common.StaticClass import StaticClass
 
 """
@@ -52,12 +52,12 @@ class PersistenceAccessor(StaticClass):
     @staticmethod
     def saveData(location, data):
         with open(location, 'wb') as file:
-            cPickle.dump(data, file)
+            pickle.dump(data, file)
 
     @staticmethod
     def loadData(location):
         with open(location, 'rb') as file:
-            return cPickle.load(file)
+            return pickle.load(file)
 
     @staticmethod
     def getDirectoryInfos(currentDir):

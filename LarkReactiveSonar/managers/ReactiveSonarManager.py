@@ -79,7 +79,7 @@ class ReactiveSonarManager(StaticClass):
                 tempPerfSonarAccessor = PerfSonarAccessor(perfSonarProject, PREFERRED_PERFSONAR_GLOBAL_LOOKUP_SERVICE, PROJECT_DISCOVERY_MODE)
             except:
                  #no project results
-                 print "Empty perfSonar Project: "+perfSonarProject
+                 print("Empty perfSonar Project: "+perfSonarProject)
                  continue
 
             #make dir for project
@@ -164,6 +164,6 @@ class ReactiveSonarManager(StaticClass):
             data["TimePeriodForAverages"] = str(SECONDS_AGO_TO_CACHE)
             if average != 0:
                 datum.append(data)
-                print average
+                print(average)
 
         HTCondorAccessor.newClassAds(datum, PERFSONAR_CLASSAD_TYPE)

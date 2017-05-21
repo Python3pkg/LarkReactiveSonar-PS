@@ -585,12 +585,12 @@ class PerfSonarAccessor(object):
             value_buckets_parsed = []
             try:
                 for value_bucket in value_buckets:
-                    print value_bucket
+                    print(value_bucket)
                     value_bucket = value_bucket.split(' ')
                     if len(value_bucket) > 0:
                         temp_val_bucket = {'count': value_bucket[0], 'value': value_bucket[1]}
                         value_buckets_parsed.append(temp_val_bucket)
-                        print 'count:' + value_bucket[0] + 'value:' + value_bucket[1] + '\n'
+                        print('count:' + value_bucket[0] + 'value:' + value_bucket[1] + '\n')
 
                 row['value_buckets'] = value_buckets_parsed
             except Exception: 

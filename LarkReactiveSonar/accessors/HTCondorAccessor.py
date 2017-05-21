@@ -77,7 +77,7 @@ class HTCondorAccessor(StaticClass):
             ad['Timestamp'] = str(time.time())
             
             adfile = open('perfSonarTest' +str(i) + '.ad', 'w+')
-            print>>adfile , ad
+            print(ad, file=adfile)
             adfile.close()
             classAds.append(ad)
             i+=1
